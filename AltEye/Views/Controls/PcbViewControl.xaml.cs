@@ -1,4 +1,5 @@
 using Microsoft.Graphics.Canvas.Geometry;
+using Microsoft.Graphics.Canvas.Text;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
@@ -173,10 +174,12 @@ namespace AltEye.Views.Controls
                     session.Transform = new Matrix3x2(zoomRank, 0,
                         0, zoomRank,
                         (float)this.HorizontalPosition * zoomRank, (float)this.VerticalPosition * zoomRank);
+
                     if (this.Document == null) return;
 
                     foreach (var polygon in this.Document.Polygons)
                     {
+                        if (polygon.IsHidden) continue;
                         var geometry = CanvasGeometry.CreatePolygon(virtualCanvas, polygon.Vertices.Select(ToRenderVector2).ToArray());
                         session.FillGeometry(geometry, Colors.Red);
                     }
@@ -185,18 +188,47 @@ namespace AltEye.Views.Controls
                         session.FillRectangle(new Rect(ToRenderPoint(fill.Corner1), ToRenderPoint(fill.Corner2)), Colors.Orange);
 
                     foreach (var track in this.Document.Tracks)
-                        session.DrawLine(ToRenderVector2(track.Start), ToRenderVector2(track.End), Colors.Blue, (float)track.Width.ToMils()/5F);
+                        session.DrawLine(ToRenderVector2(track.Start), ToRenderVector2(track.End), Colors.Blue, (float)MilsToPixels(track.Width.ToMils()),
+                            new CanvasStrokeStyle 
+                            {
+                                StartCap = CanvasCapStyle.Round,
+                                EndCap = CanvasCapStyle.Round
+                            });
 
-                    foreach (var arc in this.Document.Arcs)
+                    foreach (var arc in this.Document.Arcs)                        
                         session.DrawCircle(ToRenderVector2(arc.Center), (float)MilsToPixels(arc.Radius.ToMils()), Colors.Pink);
 
                     foreach (var text in this.Document.Texts)
-                        session.DrawText(text.Text, 
-                            new Rect(MilsToPixels(text.Bounds.Min.X.ToMils()), MilsToPixels(text.Bounds.Min.Y.ToMils()), MilsToPixels(text.Bounds.Max.X.ToMils()), MilsToPixels(text.Bounds.Max.Y.ToMils())),
-                            Colors.LightCoral, null);
+                    {                        
+                        var format = new CanvasTextFormat
+                        {
+                            FontFamily = text.FontName,
+                            FontSize = (float)MilsToPixels(text.Height.ToMils()),
+                            HorizontalAlignment = CanvasHorizontalAlignment.Left,
+                            VerticalAlignment = CanvasVerticalAlignment.Top
+                        };
 
-                    foreach (var pad in this.Document.Pads)                    
-                        session.DrawCircle(ToRenderVector2(pad.Location), 10, Colors.White);
+                        using var layout = new CanvasTextLayout(
+                            virtualCanvas,
+                            text.Text,
+                            format,
+                            float.MaxValue,
+                            float.MaxValue);
+
+                        session.DrawTextLayout(
+                            layout,
+                            (float)MilsToPixels(text.Location.X.ToMils()),
+                            (float)MilsToPixels(text.Location.Y.ToMils()),
+                            Colors.LightCoral);
+                    }
+
+                    foreach (var pad in this.Document.Pads)
+                    {
+                        session.FillCircle(ToRenderVector2(pad.Location), (float)MilsToPixels(pad.Size.X.ToMils()) / 2F,  Colors.White);
+
+                        if (pad.HoleType == OriginalCircuit.Eda.Enums.PadHoleType.Round)                        
+                            session.FillCircle(ToRenderVector2(pad.Location), (float)MilsToPixels(pad.HoleSize.ToMils()) / 2F, Colors.Black);                        
+                    }
                     
                 }
             }

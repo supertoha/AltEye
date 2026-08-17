@@ -1,17 +1,13 @@
-using Microsoft.Graphics.Canvas.Geometry;
-using Microsoft.Graphics.Canvas.Text;
+using AltEye.Views.Controls.Render;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using OriginalCircuit.Altium.Models.Pcb;
-using OriginalCircuit.Eda.Primitives;
 using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 
 namespace AltEye.Views.Controls
@@ -86,6 +82,8 @@ namespace AltEye.Views.Controls
             this.Zoom = newZoom;
         }
 
+        private IRender[] _items = [];
+
         public double Zoom
         {
             get => (double)GetValue(ZoomProperty);
@@ -143,22 +141,22 @@ namespace AltEye.Views.Controls
         private static void DocumentChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is not PcbViewControl control) return;
+
+            if (e.NewValue is PcbDocument newDocument)
+            {
+                control._items = 
+                    [
+                        ..newDocument.Polygons.Select(x => new PcbPolygonRender(x)),
+                        ..newDocument.Fills.Select(x => new PcbFillRender(x)),
+                        ..newDocument.Tracks.Select(x => new PcbTrackRender(x)),
+                        ..newDocument.Arcs.Select(x => new PcbArcRender(x)),
+                        ..newDocument.Pads.Select(x => new PcbPadRender(x)),
+                        ..newDocument.Texts.Select(x => new PcbTextRender(x)),                    
+                    ];
+                    
+            }
+
             control.VirtualCanvas.Invalidate();
-        }
-
-        private Vector2 ToRenderVector2(CoordPoint point)
-        {
-            return new Vector2((float)MilsToPixels(point.X.ToMils()), (float)MilsToPixels(point.Y.ToMils()));
-        }
-
-        private Point ToRenderPoint(CoordPoint point)
-        {
-            return new Point(MilsToPixels(point.X.ToMils()), MilsToPixels(point.Y.ToMils()));
-        }
-
-        private double MilsToPixels(double mils)
-        {
-            return mils * 0.1;
         }
 
         private void VirtualCanvas_RegionsInvalidated(CanvasVirtualControl sender, CanvasRegionsInvalidatedEventArgs args)
@@ -175,61 +173,8 @@ namespace AltEye.Views.Controls
                         0, zoomRank,
                         (float)this.HorizontalPosition * zoomRank, (float)this.VerticalPosition * zoomRank);
 
-                    if (this.Document == null) return;
-
-                    foreach (var polygon in this.Document.Polygons)
-                    {
-                        if (polygon.IsHidden) continue;
-                        var geometry = CanvasGeometry.CreatePolygon(virtualCanvas, polygon.Vertices.Select(ToRenderVector2).ToArray());
-                        session.FillGeometry(geometry, Colors.Red);
-                    }
-
-                    foreach (var fill in this.Document.Fills)
-                        session.FillRectangle(new Rect(ToRenderPoint(fill.Corner1), ToRenderPoint(fill.Corner2)), Colors.Orange);
-
-                    foreach (var track in this.Document.Tracks)
-                        session.DrawLine(ToRenderVector2(track.Start), ToRenderVector2(track.End), Colors.Blue, (float)MilsToPixels(track.Width.ToMils()),
-                            new CanvasStrokeStyle 
-                            {
-                                StartCap = CanvasCapStyle.Round,
-                                EndCap = CanvasCapStyle.Round
-                            });
-
-                    foreach (var arc in this.Document.Arcs)                        
-                        session.DrawCircle(ToRenderVector2(arc.Center), (float)MilsToPixels(arc.Radius.ToMils()), Colors.Pink);
-
-                    foreach (var text in this.Document.Texts)
-                    {                        
-                        var format = new CanvasTextFormat
-                        {
-                            FontFamily = text.FontName,
-                            FontSize = (float)MilsToPixels(text.Height.ToMils()),
-                            HorizontalAlignment = CanvasHorizontalAlignment.Left,
-                            VerticalAlignment = CanvasVerticalAlignment.Top
-                        };
-
-                        using var layout = new CanvasTextLayout(
-                            virtualCanvas,
-                            text.Text,
-                            format,
-                            float.MaxValue,
-                            float.MaxValue);
-
-                        session.DrawTextLayout(
-                            layout,
-                            (float)MilsToPixels(text.Location.X.ToMils()),
-                            (float)MilsToPixels(text.Location.Y.ToMils()),
-                            Colors.LightCoral);
-                    }
-
-                    foreach (var pad in this.Document.Pads)
-                    {
-                        session.FillCircle(ToRenderVector2(pad.Location), (float)MilsToPixels(pad.Size.X.ToMils()) / 2F,  Colors.White);
-
-                        if (pad.HoleType == OriginalCircuit.Eda.Enums.PadHoleType.Round)                        
-                            session.FillCircle(ToRenderVector2(pad.Location), (float)MilsToPixels(pad.HoleSize.ToMils()) / 2F, Colors.Black);                        
-                    }
-                    
+                    foreach (var itemRender in this._items)
+                        itemRender.Render(session, virtualCanvas);
                 }
             }
         }

@@ -1,3 +1,4 @@
+using AltEye.Views.Commons;
 using AltEye.Views.Controls.Render;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using Microsoft.UI;
@@ -18,8 +19,10 @@ namespace AltEye.Views.Controls
         {
             InitializeComponent();
             this.VirtualCanvas.RegionsInvalidated += VirtualCanvas_RegionsInvalidated;
-            this.PointerWheelChanged += PcbViewControl_PointerWheelChanged;
-            MouseNavigationBehavior();
+
+            this.MouseZoomBehavior();
+            this.MouseNavigationBehavior();
+            this.MouseHoverBehavior();
         }
 
         private void MouseNavigationBehavior()
@@ -58,28 +61,40 @@ namespace AltEye.Views.Controls
             };
         }
 
-        private void PcbViewControl_PointerWheelChanged(object sender, PointerRoutedEventArgs pointerArgs)
+        private void MouseZoomBehavior()
         {
-            var zoomStep = 0.25D;
+            this.PointerWheelChanged += (_, e) => 
+            {
+                var zoomStep = 0.25D;
 
-            var currentHorizontalZoom = this.Zoom;
-            var cursorPoint = pointerArgs.GetCurrentPoint(this);
-            var cursorPosition = cursorPoint.Position;
+                var currentHorizontalZoom = this.Zoom;
+                var cursorPoint = e.GetCurrentPoint(this);
+                var cursorPosition = cursorPoint.Position;
 
-            var zoomFactor = Math.Pow(2D, this.Zoom);
-            var newZoom = currentHorizontalZoom + Math.Sign(cursorPoint.Properties.MouseWheelDelta) * zoomStep;
-            var newZoomFactor = Math.Pow(2D, newZoom);
+                var zoomFactor = Math.Pow(2D, this.Zoom);
+                var newZoom = currentHorizontalZoom + Math.Sign(cursorPoint.Properties.MouseWheelDelta) * zoomStep;
+                var newZoomFactor = Math.Pow(2D, newZoom);
 
-            var currentPointerXPositionM = cursorPosition.X / zoomFactor;
-            var currentPointerYPositionM = cursorPosition.Y / zoomFactor;
-            var newPositionXPx = currentPointerXPositionM * newZoomFactor;
-            var newPositionYPx = currentPointerYPositionM * newZoomFactor;
-            var horizontalZoomShiftPx = newPositionXPx - cursorPosition.X;
-            var verticalZoomShiftPx = newPositionYPx - cursorPosition.Y;
+                var currentPointerXPositionM = cursorPosition.X / zoomFactor;
+                var currentPointerYPositionM = cursorPosition.Y / zoomFactor;
+                var newPositionXPx = currentPointerXPositionM * newZoomFactor;
+                var newPositionYPx = currentPointerYPositionM * newZoomFactor;
+                var horizontalZoomShiftPx = newPositionXPx - cursorPosition.X;
+                var verticalZoomShiftPx = newPositionYPx - cursorPosition.Y;
 
-            this.HorizontalPosition -= horizontalZoomShiftPx / newZoomFactor;
-            this.VerticalPosition -= verticalZoomShiftPx / newZoomFactor;
-            this.Zoom = newZoom;
+                this.HorizontalPosition -= horizontalZoomShiftPx / newZoomFactor;
+                this.VerticalPosition -= verticalZoomShiftPx / newZoomFactor;
+                this.Zoom = newZoom;
+            };
+        }
+        
+        private void MouseHoverBehavior()
+        {
+            this.PointerMoved += (o, e) => 
+            {
+                var pointer = e.GetCurrentPoint(this.VirtualCanvas);
+                var pixel = ScreenHelper.GetScreenPixelColor(Convert.ToInt32(pointer.Position.X), Convert.ToInt32(pointer.Position.Y));
+            };
         }
 
         private IRender[] _items = [];

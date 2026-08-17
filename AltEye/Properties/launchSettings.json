@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "AltEye (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "AltEye (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

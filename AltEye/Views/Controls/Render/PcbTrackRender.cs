@@ -12,7 +12,7 @@ namespace AltEye.Views.Controls.Render
 
         public override void Render(CanvasDrawingSession session, ICanvasResourceCreator canvasResourceCreator)
         {
-            session.DrawLine(ToRenderVector2(this.Source.Start), ToRenderVector2(this.Source.End), Colors.Blue, (float)MilsToPixels(this.Source.Width.ToMils()),
+            session.DrawLine(RenderHelper.ToRenderVector2(this.Source.Start), RenderHelper.ToRenderVector2(this.Source.End), Colors.Blue, RenderHelper.MilsToPixels(this.Source.Width.ToMils()),
             new CanvasStrokeStyle
             {
                 StartCap = CanvasCapStyle.Round,

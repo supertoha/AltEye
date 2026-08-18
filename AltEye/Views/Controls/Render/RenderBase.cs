@@ -1,12 +1,7 @@
 ﻿using Microsoft.Graphics.Canvas;
 using OriginalCircuit.Eda.Primitives;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
-using Windows.Foundation;
+using Windows.UI;
 
 namespace AltEye.Views.Controls.Render
 {
@@ -17,25 +12,35 @@ namespace AltEye.Views.Controls.Render
             this.Source = source;
         }
 
+        protected bool _isSelected;
+
         public T Source { get; init; }
 
-        protected Vector2 ToRenderVector2(CoordPoint point)
+        protected Color MutateColor(Color baseColor)
         {
-            return new Vector2((float)MilsToPixels(point.X.ToMils()), (float)MilsToPixels(point.Y.ToMils()));
+            return Color.FromArgb(Convert.ToByte((baseColor.A)),
+                Convert.ToByte((baseColor.R + Random.Shared.Next(-2, 3)) % 255),
+                Convert.ToByte((baseColor.G + Random.Shared.Next(-2, 3)) % 255),
+                Convert.ToByte((baseColor.B + Random.Shared.Next(-2, 3)) % 255));
         }
 
-        protected Point ToRenderPoint(CoordPoint point)
+        public void Select(bool isSelected)
         {
-            return new Point(MilsToPixels(point.X.ToMils()), MilsToPixels(point.Y.ToMils()));
+            this._isSelected = isSelected;
         }
 
-        protected double MilsToPixels(double mils)
+        public virtual void CreateResources(ICanvasResourceCreator canvasResourceCreator, ColorIndex<IRender> colorIndex)
         {
-            return mils * 0.1;
+
         }
 
         public virtual void Render(CanvasDrawingSession session, ICanvasResourceCreator canvasResourceCreator)
         {
+        }
+
+        public virtual bool HitTest(CoordPoint point)
+        {
+            return false;
         }
     }
 }

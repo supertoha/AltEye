@@ -2,12 +2,10 @@
 using Microsoft.Graphics.Canvas.Text;
 using Microsoft.UI;
 using OriginalCircuit.Eda.Models.Pcb;
+using OriginalCircuit.Eda.Primitives;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
+using System.Numerics;
+using Windows.UI;
 
 namespace AltEye.Views.Controls.Render
 {
@@ -15,28 +13,49 @@ namespace AltEye.Views.Controls.Render
     {
         public PcbTextRender(IPcbText source) : base(source) { }
 
-        public override void Render(CanvasDrawingSession session, ICanvasResourceCreator canvasResourceCreator)
+        public override void CreateResources(ICanvasResourceCreator canvasResourceCreator, ColorIndex<IRender> colorIndex)
         {
             var format = new CanvasTextFormat
             {
                 FontFamily = this.Source.FontName,
-                FontSize = (float)MilsToPixels(this.Source.Height.ToMils()),
+                FontSize = RenderHelper.MilsToPixels(this.Source.Height.ToMils()),
                 HorizontalAlignment = CanvasHorizontalAlignment.Left,
                 VerticalAlignment = CanvasVerticalAlignment.Top
             };
 
-            using var layout = new CanvasTextLayout(
+            this._textLayout = new CanvasTextLayout(
                 canvasResourceCreator,
                 this.Source.Text,
                 format,
                 float.MaxValue,
                 float.MaxValue);
 
+            this._textColor = this.MutateColor(Colors.LightCoral);
+            colorIndex.Add(this._textColor, this);
+        }
+
+        private Color _textColor;
+        private CanvasTextLayout _textLayout;
+
+
+        public override bool HitTest(CoordPoint point)
+        {            
+            
+
+            return this.Source.Bounds.Contains(point);
+        }
+
+        public override void Render(CanvasDrawingSession session, ICanvasResourceCreator canvasResourceCreator)
+        {
             session.DrawTextLayout(
-                layout,
-                (float)MilsToPixels(this.Source.Location.X.ToMils()),
-                (float)MilsToPixels(this.Source.Location.Y.ToMils()),
-                Colors.LightCoral);
+                this._textLayout,
+                RenderHelper.MilsToPixels(this.Source.Location.X.ToMils()),
+                RenderHelper.MilsToPixels(this.Source.Location.Y.ToMils()),
+                this._textColor);
+
+            if (this._isSelected)
+                session.DrawRectangle(new Windows.Foundation.Rect(RenderHelper.ToRenderPoint(this.Source.Bounds.Min), RenderHelper.ToRenderPoint(this.Source.Bounds.Max)),
+                    Colors.Black, 0.1F);
         }
     }
 }

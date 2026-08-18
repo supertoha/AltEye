@@ -15,7 +15,7 @@ namespace AltEye.Views.Controls.Render
         {
             if (this.Source.IsHidden) return;
 
-            var geometry = CanvasGeometry.CreatePolygon(canvasResourceCreator, this.Source.Vertices.Select(ToRenderVector2).ToArray());
+            var geometry = CanvasGeometry.CreatePolygon(canvasResourceCreator, this.Source.Vertices.Select(RenderHelper.ToRenderVector2).ToArray());
             session.FillGeometry(geometry, Colors.Red);
         }
     }

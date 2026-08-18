@@ -11,7 +11,7 @@ namespace AltEye.Views.Controls.Render
 
         public override void Render(CanvasDrawingSession session, ICanvasResourceCreator canvasResourceCreator)
         {
-            session.DrawCircle(ToRenderVector2(this.Source.Center), (float)MilsToPixels(this.Source.Radius.ToMils()), Colors.Pink);
+            session.DrawCircle(RenderHelper.ToRenderVector2(this.Source.Center), RenderHelper.MilsToPixels(this.Source.Radius.ToMils()), Colors.Pink);
         }
     }
 }

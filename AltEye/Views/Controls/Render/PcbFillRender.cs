@@ -12,7 +12,7 @@ namespace AltEye.Views.Controls.Render
 
         public override void Render(CanvasDrawingSession session, ICanvasResourceCreator canvasResourceCreator)
         {
-            session.FillRectangle(new Rect(ToRenderPoint(this.Source.Corner1), ToRenderPoint(this.Source.Corner2)), Colors.Orange);
+            session.FillRectangle(new Rect(RenderHelper.ToRenderPoint(this.Source.Corner1), RenderHelper.ToRenderPoint(this.Source.Corner2)), Colors.Orange);
         }
     }
 }

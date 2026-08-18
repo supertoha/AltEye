@@ -11,10 +11,10 @@ namespace AltEye.Views.Controls.Render
 
         public override void Render(CanvasDrawingSession session, ICanvasResourceCreator canvasResourceCreator)
         {
-            session.FillCircle(ToRenderVector2(this.Source.Location), (float)MilsToPixels(this.Source.Size.X.ToMils()) / 2F, Colors.White);
+            session.FillCircle(RenderHelper.ToRenderVector2(this.Source.Location), RenderHelper.MilsToPixels(this.Source.Size.X.ToMils()) / 2F, Colors.White);
 
             if (this.Source.HoleType == OriginalCircuit.Eda.Enums.PadHoleType.Round)
-                session.FillCircle(ToRenderVector2(this.Source.Location), (float)MilsToPixels(this.Source.HoleSize.ToMils()) / 2F, Colors.Black);
+                session.FillCircle(RenderHelper.ToRenderVector2(this.Source.Location), RenderHelper.MilsToPixels(this.Source.HoleSize.ToMils()) / 2F, Colors.Black);
         }
     }
 }

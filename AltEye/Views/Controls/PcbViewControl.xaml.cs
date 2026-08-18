@@ -1,14 +1,16 @@
 using AltEye.Views.Commons;
 using AltEye.Views.Controls.Render;
 using Microsoft.Graphics.Canvas.UI.Xaml;
-using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using OriginalCircuit.Altium.Models.Pcb;
+using OriginalCircuit.Eda.Primitives;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Windows.Foundation;
 
 namespace AltEye.Views.Controls
@@ -19,11 +21,11 @@ namespace AltEye.Views.Controls
         {
             InitializeComponent();
             this.VirtualCanvas.RegionsInvalidated += VirtualCanvas_RegionsInvalidated;
-
             this.MouseZoomBehavior();
             this.MouseNavigationBehavior();
             this.MouseHoverBehavior();
         }
+
 
         private void MouseNavigationBehavior()
         {
@@ -92,12 +94,31 @@ namespace AltEye.Views.Controls
         {
             this.PointerMoved += (o, e) => 
             {
-                var pointer = e.GetCurrentPoint(this.VirtualCanvas);
-                var pixel = ScreenHelper.GetScreenPixelColor(Convert.ToInt32(pointer.Position.X), Convert.ToInt32(pointer.Position.Y));
+                var controlPointer = e.GetCurrentPoint(this.VirtualCanvas);
+                
+                var controlPosition = controlPointer.Position;
+                var screenPosition = this.XamlRoot.CoordinateConverter.ConvertLocalToScreen(controlPosition);
+                var screenPixel = ScreenHelper.GetScreenPixelColor(screenPosition.X, screenPosition.Y);
+
+                var zoomFactor = Math.Pow(2D, this.Zoom);
+
+                //var colorHoverItems = this._items.FindByColor(screenPixel);
+                var position = new CoordPoint(Coord.FromMils(RenderHelper.PixelsToMils(controlPosition.X) / zoomFactor  - RenderHelper.PixelsToMils(this.HorizontalPosition)),
+                    Coord.FromMils(RenderHelper.PixelsToMils(controlPosition.Y / zoomFactor - this.VerticalPosition)));
+
+                var hitTestItem = this._items.FirstOrDefault(x => x.HitTest(position));
+
+                foreach (var item in this._items)
+                    item.Select(false);
+
+                //TODO: change
+                hitTestItem?.Select(true);
+                this.VirtualCanvas.Invalidate();
             };
         }
 
         private IRender[] _items = [];
+        private ColorIndex<IRender> _colorIndex = new();
 
         public double Zoom
         {
@@ -159,6 +180,7 @@ namespace AltEye.Views.Controls
 
             if (e.NewValue is PcbDocument newDocument)
             {
+                control._colorIndex = new();
                 control._items = 
                     [
                         ..newDocument.Polygons.Select(x => new PcbPolygonRender(x)),
@@ -168,7 +190,14 @@ namespace AltEye.Views.Controls
                         ..newDocument.Pads.Select(x => new PcbPadRender(x)),
                         ..newDocument.Texts.Select(x => new PcbTextRender(x)),                    
                     ];
-                    
+
+                foreach (var item in control._items)
+                    item.CreateResources(control.VirtualCanvas, control._colorIndex);
+            }
+
+            if (e.OldValue != null)
+            {
+                control._colorIndex.Dispose();
             }
 
             control.VirtualCanvas.Invalidate();

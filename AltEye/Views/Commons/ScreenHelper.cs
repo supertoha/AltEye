@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using Windows.Graphics;
 using Windows.UI;
 
 namespace AltEye.Views.Commons
@@ -14,6 +15,9 @@ namespace AltEye.Views.Commons
 
         [DllImport("gdi32.dll", SetLastError = true)]
         private static extern uint GetPixel(IntPtr hDC, int x, int y);
+
+        [DllImport("user32.dll")]
+        public static extern bool ClientToScreen(IntPtr hWnd, ref PointInt32 lpPoint);
 
         public static Color GetScreenPixelColor(int x, int y)
         {

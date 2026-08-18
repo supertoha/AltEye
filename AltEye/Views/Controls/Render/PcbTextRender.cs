@@ -1,10 +1,9 @@
-﻿using Microsoft.Graphics.Canvas;
+﻿using AltEye.Models;
+using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.Text;
-using Microsoft.UI;
+using OriginalCircuit.Altium.Models.Pcb;
 using OriginalCircuit.Eda.Models.Pcb;
 using OriginalCircuit.Eda.Primitives;
-using System;
-using System.Numerics;
 using Windows.UI;
 
 namespace AltEye.Views.Controls.Render
@@ -13,7 +12,7 @@ namespace AltEye.Views.Controls.Render
     {
         public PcbTextRender(IPcbText source) : base(source) { }
 
-        public override void CreateResources(ICanvasResourceCreator canvasResourceCreator, ColorIndex<IRender> colorIndex)
+        public override void CreateResources(ICanvasResourceCreator canvasResourceCreator)
         {
             var format = new CanvasTextFormat
             {
@@ -30,19 +29,27 @@ namespace AltEye.Views.Controls.Render
                 float.MaxValue,
                 float.MaxValue);
 
-            this._textColor = this.MutateColor(Colors.LightCoral);
-            colorIndex.Add(this._textColor, this);
+            this._textColor = this.MutateColor(Defaults.PcbTextColor);
         }
 
         private Color _textColor;
         private CanvasTextLayout _textLayout;
 
+        public override bool IsVisible()
+        {
+            return (this.Source.Layer == (int)PcbLayers.TopOverlay ||
+                this.Source.Layer == (int)PcbLayers.BottomOverlay ) &&
+                this.Source is PcbText pcbText && !pcbText.IsComment && !pcbText.IsHidden;
+        }
 
-        public override bool HitTest(CoordPoint point)
-        {            
-            
+        public override bool HitTest(CoordPoint point, Color pixelColor)
+        {
+            if (this._textColor != pixelColor) return false;
 
-            return this.Source.Bounds.Contains(point);
+            // convert CoordPoint to local pixels
+            var localX = RenderHelper.MilsToPixels(point.X.ToMils() - this.Source.Location.X.ToMils());
+            var localY = RenderHelper.MilsToPixels(point.Y.ToMils() - this.Source.Location.Y.ToMils());
+            return this._textLayout.LayoutBounds.Contains(new Windows.Foundation.Point(localX, localY));
         }
 
         public override void Render(CanvasDrawingSession session, ICanvasResourceCreator canvasResourceCreator)
@@ -53,9 +60,13 @@ namespace AltEye.Views.Controls.Render
                 RenderHelper.MilsToPixels(this.Source.Location.Y.ToMils()),
                 this._textColor);
 
-            if (this._isSelected)
-                session.DrawRectangle(new Windows.Foundation.Rect(RenderHelper.ToRenderPoint(this.Source.Bounds.Min), RenderHelper.ToRenderPoint(this.Source.Bounds.Max)),
-                    Colors.Black, 0.1F);
+            if (this.IsHover)
+            {               
+                session.DrawRectangle(new Windows.Foundation.Rect(RenderHelper.MilsToPixels(this.Source.Location.X.ToMils()) + this._textLayout.LayoutBounds.X,
+                    RenderHelper.MilsToPixels(this.Source.Location.Y.ToMils()) + this._textLayout.LayoutBounds.Y,
+                    this._textLayout.LayoutBounds.Width,
+                    this._textLayout.LayoutBounds.Height), Defaults.HoverBorderColor, 0.1F);
+            }
         }
     }
 }

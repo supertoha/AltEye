@@ -12,24 +12,31 @@ namespace AltEye.Views.Controls.Render
             this.Source = source;
         }
 
-        protected bool _isSelected;
+        public static IRender HoverItem { get; set; }
+
+        public bool IsHover => RenderBase<IRender>.HoverItem == this;
 
         public T Source { get; init; }
 
         protected Color MutateColor(Color baseColor)
         {
             return Color.FromArgb(Convert.ToByte((baseColor.A)),
-                Convert.ToByte((baseColor.R + Random.Shared.Next(-2, 3)) % 255),
-                Convert.ToByte((baseColor.G + Random.Shared.Next(-2, 3)) % 255),
-                Convert.ToByte((baseColor.B + Random.Shared.Next(-2, 3)) % 255));
+                Convert.ToByte(Math.Min(255, Math.Max(0, baseColor.R + Random.Shared.Next(-2, 3)))),
+                Convert.ToByte(Math.Min(255, Math.Max(0, baseColor.G + Random.Shared.Next(-2, 3)))),
+                Convert.ToByte(Math.Min(255, Math.Max(0, baseColor.B + Random.Shared.Next(-2, 3)))));
+        }
+
+        public virtual bool IsVisible()
+        {
+            return true;
         }
 
         public void Select(bool isSelected)
         {
-            this._isSelected = isSelected;
+            RenderBase<IRender>.HoverItem = isSelected ? this: null;
         }
 
-        public virtual void CreateResources(ICanvasResourceCreator canvasResourceCreator, ColorIndex<IRender> colorIndex)
+        public virtual void CreateResources(ICanvasResourceCreator canvasResourceCreator)
         {
 
         }
@@ -38,7 +45,7 @@ namespace AltEye.Views.Controls.Render
         {
         }
 
-        public virtual bool HitTest(CoordPoint point)
+        public virtual bool HitTest(CoordPoint point, Color pixelColor)
         {
             return false;
         }

@@ -10,7 +10,6 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using Windows.Foundation;
 
 namespace AltEye.Views.Controls
@@ -102,23 +101,17 @@ namespace AltEye.Views.Controls
 
                 var zoomFactor = Math.Pow(2D, this.Zoom);
 
-                //var colorHoverItems = this._items.FindByColor(screenPixel);
-                var position = new CoordPoint(Coord.FromMils(RenderHelper.PixelsToMils(controlPosition.X) / zoomFactor  - RenderHelper.PixelsToMils(this.HorizontalPosition)),
+                var absolutePosition = new CoordPoint(Coord.FromMils(RenderHelper.PixelsToMils(controlPosition.X) / zoomFactor  - RenderHelper.PixelsToMils(this.HorizontalPosition)),
                     Coord.FromMils(RenderHelper.PixelsToMils(controlPosition.Y / zoomFactor - this.VerticalPosition)));
 
-                var hitTestItem = this._items.FirstOrDefault(x => x.HitTest(position));
+                var hitTestItem = this._items.FirstOrDefault(x => x.IsVisible() && x.HitTest(absolutePosition, screenPixel));
 
-                foreach (var item in this._items)
-                    item.Select(false);
-
-                //TODO: change
                 hitTestItem?.Select(true);
                 this.VirtualCanvas.Invalidate();
             };
         }
 
         private IRender[] _items = [];
-        private ColorIndex<IRender> _colorIndex = new();
 
         public double Zoom
         {
@@ -180,7 +173,6 @@ namespace AltEye.Views.Controls
 
             if (e.NewValue is PcbDocument newDocument)
             {
-                control._colorIndex = new();
                 control._items = 
                     [
                         ..newDocument.Polygons.Select(x => new PcbPolygonRender(x)),
@@ -188,16 +180,18 @@ namespace AltEye.Views.Controls
                         ..newDocument.Tracks.Select(x => new PcbTrackRender(x)),
                         ..newDocument.Arcs.Select(x => new PcbArcRender(x)),
                         ..newDocument.Pads.Select(x => new PcbPadRender(x)),
+                        ..newDocument.Vias.Select(x => new PcbViaRender(x)),
+                        ..newDocument.Regions.Select(x => new PcbRegionRender(x)),
                         ..newDocument.Texts.Select(x => new PcbTextRender(x)),                    
                     ];
 
                 foreach (var item in control._items)
-                    item.CreateResources(control.VirtualCanvas, control._colorIndex);
+                    item.CreateResources(control.VirtualCanvas);
             }
 
             if (e.OldValue != null)
             {
-                control._colorIndex.Dispose();
+                
             }
 
             control.VirtualCanvas.Invalidate();
@@ -217,7 +211,8 @@ namespace AltEye.Views.Controls
                         0, zoomRank,
                         (float)this.HorizontalPosition * zoomRank, (float)this.VerticalPosition * zoomRank);
 
-                    foreach (var itemRender in this._items)
+                    var visibleItems = this._items.Where(x => x.IsVisible());
+                    foreach (var itemRender in visibleItems)
                         itemRender.Render(session, virtualCanvas);
                 }
             }

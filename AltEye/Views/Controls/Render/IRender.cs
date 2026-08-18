@@ -9,10 +9,10 @@ namespace AltEye.Views.Controls.Render
     {
         void Render(CanvasDrawingSession session, ICanvasResourceCreator canvasResourceCreator);
 
-        void CreateResources(ICanvasResourceCreator canvasResourceCreator, ColorIndex<IRender> colorIndex);
-        bool HitTest(CoordPoint point);
-        //bool HitTest(Vector2 point);
-
+        void CreateResources(ICanvasResourceCreator canvasResourceCreator);
+        bool HitTest(CoordPoint point, Color pixelColor);
         void Select(bool isSelected);
+
+        bool IsVisible();
     }
 }

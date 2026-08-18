@@ -10,15 +10,26 @@
     mc:Ignorable="d">
 
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="200"/>
-        </Grid.ColumnDefinitions>
-        <StackPanel Orientation="Vertical" Grid.Column="1">
-            <Button Content="Load" Command="{Binding LoadCommand}" HorizontalAlignment="Center"/>
-            <Slider Minimum="0" SmallChange="0.01" StepFrequency="0.01" LargeChange="0.1" Maximum="5" Value="{Binding ElementName=PcbView, Path=Zoom, Mode=TwoWay}" />
-        </StackPanel>
-        
-        <controls:PcbViewControl x:Name="PcbView" Document="{Binding Document}"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <CommandBar HorizontalAlignment="Left" DefaultLabelPosition="Right">
+            <AppBarButton Icon="OpenFile" Label="Open" Command="{Binding LoadCommand}" 
+                          HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+            <CommandBar.SecondaryCommands>
+                <AppBarButton Icon="Setting" Label="Settings">
+                    <AppBarButton.KeyboardAccelerators>
+                        <KeyboardAccelerator Modifiers="Control" Key="I" />
+                    </AppBarButton.KeyboardAccelerators>
+                </AppBarButton>
+            </CommandBar.SecondaryCommands>
+        </CommandBar>
+
+        <controls:PcbViewControl Grid.Row="1" Document="{Binding Document}"/>
+
+        <ProgressRing Visibility="{Binding IsProgressVisible}" Grid.Row="1" Width="100" Height="100" IsActive="True"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" IsIndeterminate="True"/>
     </Grid>
 </UserControl>

@@ -10,6 +10,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Windows.Foundation;
 
 namespace AltEye.Views.Controls
@@ -24,7 +25,6 @@ namespace AltEye.Views.Controls
             this.MouseNavigationBehavior();
             this.MouseHoverBehavior();
         }
-
 
         private void MouseNavigationBehavior()
         {
@@ -91,12 +91,14 @@ namespace AltEye.Views.Controls
         
         private void MouseHoverBehavior()
         {
+            var previousTimestamp = DateTime.Now;
             this.PointerMoved += (o, e) => 
             {
                 var controlPointer = e.GetCurrentPoint(this.VirtualCanvas);
-                
+                var appPointer = e.GetCurrentPoint(null);
+                 
                 var controlPosition = controlPointer.Position;
-                var screenPosition = this.XamlRoot.CoordinateConverter.ConvertLocalToScreen(controlPosition);
+                var screenPosition = this.XamlRoot.CoordinateConverter.ConvertLocalToScreen(appPointer.Position);
                 var screenPixel = ScreenHelper.GetScreenPixelColor(screenPosition.X, screenPosition.Y);
 
                 var zoomFactor = Math.Pow(2D, this.Zoom);
@@ -191,7 +193,9 @@ namespace AltEye.Views.Controls
 
             if (e.OldValue != null)
             {
-                
+                control.Zoom = 0;
+                control.HorizontalPosition = 0;
+                control.VerticalPosition = 0;
             }
 
             control.VirtualCanvas.Invalidate();
@@ -205,16 +209,14 @@ namespace AltEye.Views.Controls
 
             foreach (var region in args.InvalidatedRegions)
             {
-                using (var session = sender.CreateDrawingSession(region))
-                {
-                    session.Transform = new Matrix3x2(zoomRank, 0,
-                        0, zoomRank,
-                        (float)this.HorizontalPosition * zoomRank, (float)this.VerticalPosition * zoomRank);
+                using var session = sender.CreateDrawingSession(region);
+                session.Transform = new Matrix3x2(zoomRank, 0,
+                    0, zoomRank,
+                    (float)this.HorizontalPosition * zoomRank, (float)this.VerticalPosition * zoomRank);
 
-                    var visibleItems = this._items.Where(x => x.IsVisible());
-                    foreach (var itemRender in visibleItems)
-                        itemRender.Render(session, virtualCanvas);
-                }
+                var visibleItems = this._items.Where(x => x.IsVisible());
+                foreach (var itemRender in visibleItems)
+                    itemRender.Render(session, virtualCanvas);
             }
         }
     }

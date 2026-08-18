@@ -1,25 +1,10 @@
-﻿using AltEye.ViewModels;
+﻿using AltEye.Services;
+using AltEye.ViewModels;
 using AltEye.Views;
+using CommunityToolkit.Mvvm.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using Microsoft.UI.Xaml.Shapes;
-using OriginalCircuit.Altium.Serialization.Readers;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.ApplicationModel;
-using Windows.ApplicationModel.Activation;
-using Windows.ApplicationModel.Background;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-
 
 namespace AltEye
 {
@@ -33,17 +18,32 @@ namespace AltEye
             InitializeComponent();
         }
 
+        private Window _window;
+
         /// <summary>
         /// Invoked when the application is launched.
         /// </summary>
         /// <param name="args">Details about the launch request and process.</param>
-        protected async override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+        protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
-            var window = new MainWindow();
+            this.ConfigureServices();
+            this._window = new MainWindow();
+            
             var mainViewModel = new MainViewModel();
             var view = new MainView { DataContext = mainViewModel };
-            window.Content = view;
-            window.Activate();
+            this._window.Content = view;
+            this._window.Activate();
+        }
+
+        private void ConfigureServices()
+        {
+            var services = new ServiceCollection();
+
+            services.AddTransient<FilePickerService>((x) => new FilePickerService(() => WinRT.Interop.WindowNative.GetWindowHandle(this._window)));
+
+            // ViewModel
+
+            Ioc.Default.ConfigureServices(services.BuildServiceProvider());
         }
     }
 }
